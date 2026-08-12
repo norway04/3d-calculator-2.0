@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Print Cost Calculator</title>
+    <meta name="description" content="Calculate exact 3D printing costs and recommended selling prices in seconds. Free online 3D print cost calculator for filament, power, and profit margins.">
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.5rem; margin-top: 0; color: #111; text-align: center; }
+        p.subtitle { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+        
+        .selectors-row { display: flex; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 10px; border-radius: 8px; }
+        .selector-item { flex: 1; }
+        .selector-item label { font-size: 0.8rem; margin-bottom: 4px; color: #555; }
+        select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: white; font-size: 0.9rem; }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        button { width: 100%; background: #0066ff; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052cc; }
+        
+        .result-box { margin-top: 24px; padding: 16px; background: #eef5ff; border-radius: 8px; border: 1px solid #cce0ff; }
+        .result-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
+        .result-row.total { font-weight: bold; font-size: 1.1rem; border-top: 1px solid #b3d1ff; padding-top: 8px; margin-top: 8px; color: #004085; }
+        
+        .info-box { margin-top: 30px; font-size: 0.85rem; color: #555; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="selectors-row">
+        <div class="selector-item">
+            <label for="langSelect" id="lblLang">Language:</label>
+            <select id="langSelect" onchange="changeLanguage()">
+                <option value="en" selected>English</option>
+                <option value="no">Norsk</option>
+            </select>
+        </div>
+        <div class="selector-item">
+            <label for="currSelect" id="lblCurr">Currency:</label>
+            <select id="currSelect" onchange="calculateCost()">
+                <option value="$" selected>USD ($)</option>
+                <option value="kr">NOK (kr)</option>
+                <option value="€">EUR (€)</option>
+                <option value="£">GBP (£)</option>
+            </select>
+        </div>
+    </div>
+
+    <h1 id="title">3D Print Cost Calculator</h1>
+    <p class="subtitle" id="subtitle">Accurately calculate material costs, power usage, and selling prices.</p>
+
+    <div class="form-group">
+        <label for="weight" id="lblWeight">Print Weight (grams):</label>
+        <input type="number" id="weight" value="50">
+    </div>
+
+    <div class="form-group">
+        <label for="spoolPrice" id="lblSpool">Filament Spool Price (per 1kg):</label>
+        <input type="number" id="spoolPrice" value="25">
+    </div>
+
+    <div class="form-group">
+        <label for="printTime" id="lblTime">Print Time (hours):</label>
+        <input type="number" id="printTime" step="0.1" value="3.5">
+    </div>
+
+    <div class="form-group">
+        <label for="powerRate" id="lblPower">Electricity Rate (per kWh):</label>
+        <input type="number" id="powerRate" step="0.01" value="0.15">
+    </div>
+
+    <div class="form-group">
+        <label for="margin" id="lblMargin">Desired Profit Margin (%):</label>
+        <input type="number" id="margin" value="50">
+    </div>
+
+    <button onclick="calculateCost()" id="btnCalc">Calculate Price</button>
+
+    <div class="result-box">
+        <div class="result-row"><span id="lblResFilament">Filament Cost:</span> <span id="filamentCost">$0.00</span></div>
+        <div class="result-row"><span id="lblResPower">Electricity (~150W):</span> <span id="powerCost">$0.00</span></div>
+        <div class="result-row"><span id="lblResBase">Base Cost:</span> <span id="baseCost">$0.00</span></div>
+        <div class="result-row total"><span id="lblResTotal">Recommended Price:</span> <span id="totalPrice">$0.00</span></div>
+    </div>
+
+    <div class="info-box" id="infoBox">
+        <!-- Genereres av JavaScript -->
+    </div>
+</div>
+
+<script>
+const translations = {
+    en: {
+        title: "3D Print Cost Calculator",
+        subtitle: "Accurately calculate material costs, power usage, and selling prices.",
+        lblLang: "Language:",
+        lblCurr: "Currency:",
+        lblWeight: "Print Weight (grams):",
+        lblSpool: "Filament Spool Price (per 1kg):",
+        lblTime: "Print Time (hours):",
+        lblPower: "Electricity Rate (per kWh):",
+        lblMargin: "Desired Profit Margin (%):",
+        btnCalc: "Calculate Price",
+        lblResFilament: "Filament Cost:",
+        lblResPower: "Electricity (~150W):",
+        lblResBase: "Base Cost:",
+        lblResTotal: "Recommended Price:",
+        info: "<h3>How it works</h3><p>Pricing 3D prints accurately can be tricky. This calculator helps you determine production costs and retail prices based on key variables:</p><ul><li><strong>Filament Cost:</strong> Based on spool price and weight.</li><li><strong>Electricity:</strong> Based on ~150W average FDM printer usage.</li><li><strong>Profit Margin:</strong> Adds your chosen percentage markup.</li></ul>"
+    },
+    no: {
+        title: "3D-Print Kostnadskalkulator",
+        subtitle: "Beregne nøyaktig materialkostnad, strømforbruk og salgspris.",
+        lblLang: "Språk:",
+        lblCurr: "Valuta:",
+        lblWeight: "Vekt på utskrift (gram):",
+        lblSpool: "Rullpris på filament (per 1kg):",
+        lblTime: "Printtid (timer):",
+        lblPower: "Strømpris (per kWh):",
+        lblMargin: "Ønsket fortjeneste (%):",
+        btnCalc: "Beregne Pris",
+        lblResFilament: "Filamentkostnad:",
+        lblResPower: "Strømkostnad (~150W):",
+        lblResBase: "Ren produksjonspris:",
+        lblResTotal: "Anbefalt utsalgspris:",
+        info: "<h3>Hvordan det fungerer</h3><p>Det kan være vanskelig å sette riktig pris på 3D-utskrifter. Kalkulatoren hjelper deg med å finne produksjonskostnad og salgspris:</p><ul><li><strong>Filament:</strong> Regnet ut fra rullpris og vekt.</li><li><strong>Strøm:</strong> Basert på ca. 150W gjennomsnittlig forbruk for FDM-skrivere.</li><li><strong>Fortjeneste:</strong> Legger til din valgte prosentvise margin på toppen.</li></ul>"
+    }
+};
+
+function changeLanguage() {
+    const lang = document.getElementById('langSelect').value;
+    const t = translations[lang];
+
+    for (let key in t) {
+        if (key === 'info') {
+            document.getElementById('infoBox').innerHTML = t[key];
+        } else {
+            const el = document.getElementById(key);
+            if (el) el.innerText = t[key];
+        }
+    }
+    calculateCost();
+}
+
+function calculateCost() {
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const spoolPrice = parseFloat(document.getElementById('spoolPrice').value) || 0;
+    const printTime = parseFloat(document.getElementById('printTime').value) || 0;
+    const powerRate = parseFloat(document.getElementById('powerRate').value) || 0;
+    const margin = parseFloat(document.getElementById('margin').value) || 0;
+    const currency = document.getElementById('currSelect').value;
+
+    const filament = (spoolPrice / 1000) * weight;
+    const power = printTime * 0.15 * powerRate;
+    const base = filament + power;
+    const total = base * (1 + (margin / 100));
+
+    const formatVal = (num) => currency === 'kr' ? num.toFixed(2).replace('.', ',') + ' kr' : currency + num.toFixed(2);
+
+    document.getElementById('filamentCost').innerText = formatVal(filament);
+    document.getElementById('powerCost').innerText = formatVal(power);
+    document.getElementById('baseCost').innerText = formatVal(base);
+    document.getElementById('totalPrice').innerText = formatVal(total);
+}
+
+// Initialiser språk og beregning ved start
+changeLanguage();
+</script>
+
+</body>
+</html>
